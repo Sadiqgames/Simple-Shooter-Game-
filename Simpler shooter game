@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Shooter Game</title>
+    <style>
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: black;
+        }
+        body {
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Shooter Game</h1>
+    <p>Use Left/Right Arrow Keys to Move and Spacebar to Shoot</p>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Game variables
+        const playerWidth = 50, playerHeight = 20;
+        const bulletWidth = 5, bulletHeight = 10;
+        const enemyWidth = 50, enemyHeight = 20;
+
+        let playerX = canvas.width / 2 - playerWidth / 2;
+        let bullets = [];
+        let enemies = [];
+        let score = 0;
+        let gameRunning = true;
+
+        // Player movement
+        let keys = {};
+        document.addEventListener("keydown", (e) => keys[e.code] = true);
+        document.addEventListener("keyup", (e) => keys[e.code] = false);
+
+        // Bullet creation
+        function shootBullet() {
+            bullets.push({ x: playerX + playerWidth / 2 - bulletWidth / 2, y: canvas.height - playerHeight - bulletHeight });
+        }
+
+        // Enemy spawning
+        function spawnEnemy() {
+            const x = Math.random() * (canvas.width - enemyWidth);
+            enemies.push({ x, y: 0 });
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.fillStyle = "green";
+            ctx.fillRect(playerX, canvas.height - playerHeight, playerWidth, playerHeight);
+
+            // Move player
+            if (keys["ArrowLeft"] && playerX > 0) playerX -= 5;
+            if (keys["ArrowRight"] && playerX < canvas.width - playerWidth) playerX += 5;
+
+            // Draw and move bullets
+            ctx.fillStyle = "red";
+            bullets.forEach((bullet, index) => {
+                bullet.y -= 7;
+                ctx.fillRect(bullet.x, bullet.y, bulletWidth, bulletHeight);
+                if (bullet.y < 0) bullets.splice(index, 1);
+            });
+
+            // Draw and move enemies
+            ctx.fillStyle = "blue";
+            enemies.forEach((enemy, index) => {
+                enemy.y += 2;
+                ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
+                if (enemy.y > canvas.height) enemies.splice(index, 1); // Remove enemy if it goes off-screen
+
+                // Check collision with bullets
+                bullets.forEach((bullet, bIndex) => {
+                    if (bullet.x < enemy.x + enemyWidth &&
+                        bullet.x + bulletWidth > enemy.x &&
+                        bullet.y < enemy.y + enemyHeight &&
+                        bullet.y + bulletHeight > enemy.y) {
+                        enemies.splice(index, 1);
+                        bullets.splice(bIndex, 1);
+                        score++;
+                    }
+                });
+
+                // Check collision with player
+                if (playerX < enemy.x + enemyWidth &&
+                    playerX + playerWidth > enemy.x &&
+                    canvas.height - playerHeight < enemy.y + enemyHeight) {
+                    gameRunning = false; // End game
+                    alert("Game Over! Your score: " + score);
+                    document.location.reload();
+                }
+            });
+
+            // Display score
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 30);
+
+            // Request next frame
+            if (gameRunning) requestAnimationFrame(gameLoop);
+        }
+
+        // Spawn enemies at intervals
+        setInterval(() => {
+            if (gameRunning) spawnEnemy();
+        }, 1000);
+
+        // Shoot bullets when spacebar is pressed
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space" && gameRunning) shootBullet();
+        });
+
+        // Start game loop
+        gameLoop();
+    </script>
+</body>
+</html>
